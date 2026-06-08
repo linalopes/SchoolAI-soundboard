@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soundboard — School of Tomorrow's AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;500&family=Courier+Prime:wght@400;700&family=Inter:wght@300;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --color-deep-purple: #22113E;
+    --color-gray-green:  #CAD8D8;
+    --color-pink:        #EA7DFF;
+    --color-turquoise:   #08F2DB;
+    --color-white:       #FFFFFF;
+    --radius: 4px;
+    --space-1: 6px;
+    --space-2: 10px;
+    --space-3: 16px;
+    --space-4: 24px;
+    --space-5: 36px;
+    --space-6: 52px;
+  }
+
+  body {
+    background-color: var(--color-deep-purple);
+    color: var(--color-white);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-6) var(--space-4) var(--space-6);
+    background-image:
+      radial-gradient(circle, #EA7DFF18 1px, transparent 1px),
+      radial-gradient(circle, #08F2DB0d 1px, transparent 1px);
+    background-size: 40px 40px, 80px 80px;
+    background-position: 0 0, 20px 20px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: var(--space-5);
+    width: 100%;
+    max-width: 780px;
+  }
+
+  .school-label {
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--color-gray-green);
+    margin-bottom: var(--space-2);
+    display: block;
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 300;
+    font-size: clamp(2.4rem, 8vw, 5rem);
+    color: var(--color-white);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--color-pink); }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin: var(--space-4) 0 var(--space-3);
+    width: 100%;
+    max-width: 780px;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: #CAD8D840;
+  }
+  .divider-label {
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--color-gray-green);
+    opacity: 0.7;
+    white-space: nowrap;
+  }
+
+  #status {
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--color-turquoise);
+    height: 1.4rem;
+    margin-bottom: var(--space-3);
+    opacity: 0;
+    transition: opacity 0.2s;
+    text-transform: uppercase;
+    width: 100%;
+    max-width: 780px;
+  }
+  #status.show { opacity: 1; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: var(--space-3);
+    width: 100%;
+    max-width: 780px;
+  }
+
+  .btn {
+    position: relative;
+    background: transparent;
+    border: 1px solid #CAD8D830;
+    border-radius: var(--radius);
+    padding: var(--space-4) var(--space-3) var(--space-3);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, transform 0.08s;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+    text-align: left;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--btn-accent, var(--color-pink));
+    opacity: 0;
+    transition: opacity 0.15s;
+    border-radius: var(--radius);
+  }
+  .btn:hover { border-color: var(--btn-accent, var(--color-pink)); transform: translateY(-2px); }
+  .btn:hover::before { opacity: 0.07; }
+  .btn:active { transform: scale(0.97); }
+  .btn.playing { border-color: var(--btn-accent, var(--color-pink)); animation: btn-pulse 0.35s ease; }
+  .btn.playing::before { opacity: 0.13; }
+
+  @keyframes btn-pulse {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.04); }
+    100% { transform: scale(1); }
+  }
+
+  .btn-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--btn-accent, var(--color-pink));
+    opacity: 0.45;
+    transition: opacity 0.15s;
+  }
+  .btn:hover .btn-bar, .btn.playing .btn-bar { opacity: 1; }
+
+  .btn-index {
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.6rem;
+    color: var(--color-gray-green);
+    opacity: 0.5;
+    letter-spacing: 0.1em;
+    position: relative;
+  }
+  .btn-icon {
+    font-size: 1.6rem;
+    line-height: 1;
+    position: relative;
+    margin-top: var(--space-1);
+  }
+  .btn-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--color-white);
+    letter-spacing: 0.01em;
+    position: relative;
+    line-height: 1.2;
+  }
+  .btn-tag {
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--btn-accent, var(--color-pink));
+    opacity: 0.8;
+    position: relative;
+  }
+
+  /* file badge: shows if audio file is loaded or using fallback */
+  .btn-file {
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.55rem;
+    letter-spacing: 0.08em;
+    position: relative;
+    margin-top: auto;
+    padding-top: var(--space-1);
+    color: var(--color-gray-green);
+    opacity: 0.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+  .btn-file.loaded   { color: var(--color-turquoise); opacity: 0.7; }
+  .btn-file.fallback { color: var(--color-gray-green); opacity: 0.35; }
+
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.2;
+    transform: scale(0);
+    animation: ripple-anim 0.55s ease-out forwards;
+    pointer-events: none;
+  }
+  @keyframes ripple-anim { to { transform: scale(5); opacity: 0; } }
+
+  footer {
+    margin-top: var(--space-5);
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.65rem;
+    color: var(--color-gray-green);
+    opacity: 0.4;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+
+  .callout {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    border-left: 2px solid var(--color-turquoise);
+    padding: var(--space-2) var(--space-3);
+    background: #08F2DB0a;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    margin-bottom: var(--space-4);
+    width: 100%;
+    max-width: 780px;
+  }
+  .callout-arrow { color: var(--color-turquoise); font-family: 'Courier Prime', monospace; font-size: 0.85rem; flex-shrink: 0; margin-top: 1px; }
+  .callout-text  { font-family: 'Inter', sans-serif; font-weight: 300; font-size: 0.75rem; color: var(--color-gray-green); line-height: 1.5; }
+  .callout-text code { font-family: 'Courier Prime', monospace; color: var(--color-turquoise); font-size: 0.7rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="school-label">School of Tomorrow's AI</span>
+  <h1>Sound<span>board</span></h1>
+</header>
+
+<div class="divider" style="max-width:780px;width:100%;">
+  <span class="divider-label">sound effects</span>
+</div>
+
+<!-- <div class="callout">
+  <span class="callout-arrow">→</span>
+  <span class="callout-text">
+    Place your <code>.mp3</code> files inside a <code>sounds/</code> folder next to this HTML file.
+    Each button shows <code style="color:var(--color-turquoise)">✓ loaded</code> when its file is found,
+    or falls back to a synthesised sound until you replace it.
+  </span>
+</div> -->
+
+<div id="status" style="text-align:left;">▶ —</div>
+
+<div class="grid" id="grid"></div>
+
+<footer>Web Audio API · mp3 with synth fallback · School of Tomorrow's AI</footer>
+
+<script>
+// ── Web Audio helpers (fallback synth) ───────────────────────────────────────
+const getCtx = () => {
+  if (!window._actx) window._actx = new (window.AudioContext || window.webkitAudioContext)();
+  return window._actx;
+};
+function mkOsc(ac, type, freq, t0, endF, dur) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, t0);
+  if (endF !== null) o.frequency.exponentialRampToValueAtTime(endF, t0 + dur);
+  o.connect(g);
+  return { osc: o, gain: g };
+}
+function mkNoise(ac) {
+  const buf = ac.createBuffer(1, ac.sampleRate * 0.6, ac.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  const src = ac.createBufferSource();
+  src.buffer = buf; src.loop = true;
+  return src;
+}
+
+// ── Sound definitions ────────────────────────────────────────────────────────
+// Each entry has:
+//   file   → filename inside sounds/ folder (replace with your mp3)
+//   synth  → fallback Web Audio synthesis
+const sounds = [
+  {
+    label: 'Applause',      icon: '👏', tag: 'crowd',           accent: '#EA7DFF',
+    file: 'sounds/01-applause.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      for (let i = 0; i < 20; i++) {
+        const n = mkNoise(ac), g = ac.createGain(), f = ac.createBiquadFilter();
+        f.type = 'bandpass'; f.frequency.value = 1000 + Math.random()*1000; f.Q.value = 0.9;
+        const d = i*0.065 + Math.random()*0.03;
+        g.gain.setValueAtTime(0, t+d); g.gain.linearRampToValueAtTime(0.14+Math.random()*0.1, t+d+0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, t+d+0.13);
+        n.connect(f); f.connect(g); g.connect(ac.destination); n.start(t+d); n.stop(t+d+0.16);
+      }
+    }
+  },
+  {
+    label: 'Drum Roll',     icon: '🥁', tag: 'drumroll + crash', accent: '#08F2DB',
+    file: 'sounds/02-drum-roll.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      for (let i = 0; i < 26; i++) {
+        const n = mkNoise(ac), g = ac.createGain(), f = ac.createBiquadFilter();
+        f.type = 'bandpass'; f.frequency.value = 200; f.Q.value = 0.5;
+        const d = i*0.055;
+        g.gain.setValueAtTime(0, t+d); g.gain.linearRampToValueAtTime(0.25, t+d+0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, t+d+0.06);
+        n.connect(f); f.connect(g); g.connect(ac.destination); n.start(t+d); n.stop(t+d+0.08);
+      }
+      const cn = mkNoise(ac), cg = ac.createGain(), cf = ac.createBiquadFilter();
+      cf.type = 'highpass'; cf.frequency.value = 5000;
+      cg.gain.setValueAtTime(0.5, t+1.5); cg.gain.exponentialRampToValueAtTime(0.001, t+2.6);
+      cn.connect(cf); cf.connect(cg); cg.connect(ac.destination); cn.start(t+1.5); cn.stop(t+2.7);
+    }
+  },
+  {
+    label: 'Suspense',      icon: '😱', tag: 'thriller strings', accent: '#EA7DFF',
+    file: 'sounds/03-suspense.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      [0,0.38,0.76,1.14].forEach((d,i) => {
+        const {osc:o,gain:g} = mkOsc(ac,'sawtooth',185-i*14,t+d,null,0);
+        const vib = ac.createOscillator(), vg = ac.createGain();
+        vib.frequency.value = 6+i; vg.gain.value = 4;
+        vib.connect(vg); vg.connect(o.frequency);
+        g.gain.setValueAtTime(0,t+d); g.gain.linearRampToValueAtTime(0.18,t+d+0.05);
+        g.gain.exponentialRampToValueAtTime(0.001,t+d+0.34); g.connect(ac.destination);
+        vib.start(t+d); vib.stop(t+d+0.4); o.start(t+d); o.stop(t+d+0.4);
+      });
+    }
+  },
+  {
+    label: 'Fail',          icon: '💥', tag: 'wah wah wah',     accent: '#EA7DFF',
+    file: 'sounds/04-fail.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      const {osc:o,gain:g} = mkOsc(ac,'sawtooth',440,t,110,1.2);
+      const wah = ac.createBiquadFilter();
+      wah.type='bandpass'; wah.frequency.value=800; wah.Q.value=3;
+      wah.frequency.setValueAtTime(800,t); wah.frequency.exponentialRampToValueAtTime(200,t+1.2);
+      g.gain.setValueAtTime(0.35,t); g.gain.exponentialRampToValueAtTime(0.001,t+1.3);
+      o.connect(wah); wah.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+1.4);
+    }
+  },
+  {
+    label: 'Fanfare',       icon: '🎉', tag: 'victory',          accent: '#08F2DB',
+    file: 'sounds/05-fanfare.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      [523,659,784,1047].forEach((f,i) => {
+        const {osc:o,gain:g} = mkOsc(ac,'square',f,t+i*0.12,null,0);
+        g.gain.setValueAtTime(0.2,t+i*0.12); g.gain.exponentialRampToValueAtTime(0.001,t+i*0.12+0.18);
+        g.connect(ac.destination); o.start(t+i*0.12); o.stop(t+i*0.12+0.22);
+      });
+      [659,784,988,1319].forEach((f,i) => {
+        const {osc:o,gain:g} = mkOsc(ac,'square',f,t+0.6+i*0.1,null,0);
+        g.gain.setValueAtTime(0.15,t+0.6+i*0.1); g.gain.exponentialRampToValueAtTime(0.001,t+0.6+i*0.1+0.4);
+        g.connect(ac.destination); o.start(t+0.6+i*0.1); o.stop(t+0.6+i*0.1+0.5);
+      });
+    }
+  },
+  {
+    label: 'Laughter',      icon: '😂', tag: 'laugh track',      accent: '#CAD8D8',
+    file: 'sounds/06-laughter.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      for (let i = 0; i < 14; i++) {
+        const base = 280+Math.random()*120;
+        const {osc:o,gain:g} = mkOsc(ac,'sine',base,t+i*0.085,base*1.15,0.07);
+        g.gain.setValueAtTime(0,t+i*0.085); g.gain.linearRampToValueAtTime(0.1+Math.random()*0.08,t+i*0.085+0.03);
+        g.gain.exponentialRampToValueAtTime(0.001,t+i*0.085+0.08); g.connect(ac.destination);
+        o.start(t+i*0.085); o.stop(t+i*0.085+0.1);
+      }
+    }
+  },
+  {
+    label: 'Booing',        icon: '👎', tag: 'crowd boo',        accent: '#EA7DFF',
+    file: 'sounds/07-booing.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      for (let i = 0; i < 8; i++) {
+        const n = mkNoise(ac), g = ac.createGain(), f = ac.createBiquadFilter();
+        f.type='bandpass'; f.frequency.value=500+Math.random()*500; f.Q.value=1;
+        g.gain.setValueAtTime(0.08,t); g.gain.exponentialRampToValueAtTime(0.001,t+1.5);
+        n.connect(f); f.connect(g); g.connect(ac.destination); n.start(t); n.stop(t+1.6);
+      }
+      const {osc:o,gain:g} = mkOsc(ac,'sine',1200,t+0.1,750,0.9);
+      g.gain.setValueAtTime(0.18,t+0.1); g.gain.exponentialRampToValueAtTime(0.001,t+1.1);
+      g.connect(ac.destination); o.start(t+0.1); o.stop(t+1.2);
+    }
+  },
+  {
+    label: 'Impact',        icon: '⚡', tag: 'dramatic boom',    accent: '#08F2DB',
+    file: 'sounds/08-impact.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      const {osc:o,gain:g} = mkOsc(ac,'sine',80,t,20,0.4);
+      g.gain.setValueAtTime(0.8,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.5);
+      g.connect(ac.destination); o.start(t); o.stop(t+0.6);
+      const n = mkNoise(ac), ng = ac.createGain();
+      ng.gain.setValueAtTime(0.5,t); ng.gain.exponentialRampToValueAtTime(0.001,t+0.2);
+      n.connect(ng); ng.connect(ac.destination); n.start(t); n.stop(t+0.25);
+    }
+  },
+  {
+    label: 'Ta-Da!',         icon: '✨', tag: 'reveal',           accent: '#CAD8D8',
+    file: 'sounds/09-ta-da.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      [200,250,320,400,290].forEach(f => {
+        const {osc:o,gain:g} = mkOsc(ac,'sine',f,t,f*1.1,0.6);
+        const vib = ac.createOscillator(), vg = ac.createGain();
+        vib.frequency.value=5; vg.gain.value=3; vib.connect(vg); vg.connect(o.frequency);
+        g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(0.06,t+0.1);
+        g.gain.setValueAtTime(0.06,t+0.5); g.gain.exponentialRampToValueAtTime(0.001,t+0.85);
+        g.connect(ac.destination); vib.start(t); vib.stop(t+0.9); o.start(t); o.stop(t+0.9);
+      });
+    }
+  },
+  {
+    label: 'Game Over',     icon: '💀', tag: 'defeat',           accent: '#EA7DFF',
+    file: 'sounds/10-game-over.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      [392,349,330,262].forEach((f,i) => {
+        const {osc:o,gain:g} = mkOsc(ac,'square',f,t+i*0.22,null,0);
+        g.gain.setValueAtTime(0.2,t+i*0.22); g.gain.exponentialRampToValueAtTime(0.001,t+i*0.22+0.3);
+        g.connect(ac.destination); o.start(t+i*0.22); o.stop(t+i*0.22+0.35);
+      });
+    }
+  },
+  {
+    label: 'Ding!',         icon: '🔔', tag: 'correct',          accent: '#08F2DB',
+    file: 'sounds/11-ding.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      [1047,1319,1568].forEach((f,i) => {
+        const {osc:o,gain:g} = mkOsc(ac,'sine',f,t+i*0.08,null,0);
+        g.gain.setValueAtTime(0.28,t+i*0.08); g.gain.exponentialRampToValueAtTime(0.001,t+i*0.08+0.65);
+        g.connect(ac.destination); o.start(t+i*0.08); o.stop(t+i*0.08+0.7);
+      });
+    }
+  },
+  {
+    label: 'Alarm',         icon: '🚨', tag: 'danger',           accent: '#EA7DFF',
+    file: 'sounds/12-alarm.mp3',
+    synth(ac) {
+      const t = ac.currentTime;
+      for (let i = 0; i < 5; i++) {
+        const {osc:o1,gain:g1} = mkOsc(ac,'square',880,t+i*0.25,null,0);
+        const {osc:o2,gain:g2} = mkOsc(ac,'square',660,t+i*0.25+0.12,null,0);
+        g1.gain.setValueAtTime(0.22,t+i*0.25); g1.gain.exponentialRampToValueAtTime(0.001,t+i*0.25+0.1);
+        g2.gain.setValueAtTime(0.22,t+i*0.25+0.12); g2.gain.exponentialRampToValueAtTime(0.001,t+i*0.25+0.22);
+        g1.connect(ac.destination); g2.connect(ac.destination);
+        o1.start(t+i*0.25); o1.stop(t+i*0.25+0.13);
+        o2.start(t+i*0.25+0.12); o2.stop(t+i*0.25+0.26);
+      }
+    }
+  }
+];
+
+// ── Audio loading ─────────────────────────────────────────────────────────────
+// Try to load each mp3; mark as loaded or fallback
+const audioCache = {};
+
+function tryLoadAudio(src) {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.oncanplaythrough = () => resolve({ ok: true, audio });
+    audio.onerror = () => resolve({ ok: false });
+    audio.src = src;
+  });
+}
+
+// ── Build UI ──────────────────────────────────────────────────────────────────
+const grid   = document.getElementById('grid');
+const status = document.getElementById('status');
+let statusTimer;
+
+sounds.forEach((s, idx) => {
+  const btn = document.createElement('button');
+  btn.className = 'btn';
+  btn.style.setProperty('--btn-accent', s.accent);
+
+  const fileName = s.file.split('/').pop();
+
+  btn.innerHTML = `
+    <div class="btn-bar"></div>
+    <span class="btn-index">${String(idx+1).padStart(2,'0')}</span>
+    <span class="btn-icon">${s.icon}</span>
+    <span class="btn-label">${s.label}</span>
+    <span class="btn-tag">${s.tag}</span>
+    <span class="btn-file fallback" data-badge>⏳ ${fileName}</span>
+  `;
+
+  grid.appendChild(btn);
+
+  // try loading mp3 in background
+  tryLoadAudio(s.file).then(({ ok, audio }) => {
+    const badge = btn.querySelector('[data-badge]');
+    if (ok) {
+      audioCache[s.file] = audio;
+      badge.textContent = `✓ ${fileName}`;
+      badge.className = 'btn-file loaded';
+    } else {
+      badge.textContent = `~ synth fallback`;
+      badge.className = 'btn-file fallback';
+    }
+  });
+
+  btn.addEventListener('click', (e) => {
+    const ac = getCtx();
+    if (ac.state === 'suspended') ac.resume();
+
+    // ripple
+    const r = document.createElement('span');
+    r.className = 'ripple';
+    r.style.background = s.accent;
+    r.style.width = r.style.height = '50px';
+    r.style.left = (e.offsetX - 25) + 'px';
+    r.style.top  = (e.offsetY - 25) + 'px';
+    btn.appendChild(r);
+    setTimeout(() => r.remove(), 600);
+
+    btn.classList.add('playing');
+    setTimeout(() => btn.classList.remove('playing'), 420);
+
+    clearTimeout(statusTimer);
+    const src = audioCache[s.file] ? '· mp3' : '· synth';
+    status.textContent = `▶  ${s.label.toUpperCase()}  ${src}`;
+    status.classList.add('show');
+    statusTimer = setTimeout(() => status.classList.remove('show'), 2800);
+
+    // play mp3 if loaded, else synth
+    if (audioCache[s.file]) {
+      const a = audioCache[s.file].cloneNode();
+      a.play();
+    } else {
+      s.synth(ac);
+    }
+  });
+});
+</script>
+</body>
+</html>
